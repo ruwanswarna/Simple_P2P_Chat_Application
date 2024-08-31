@@ -1,18 +1,27 @@
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 
 public class HashUtils {
-    // Compute SHA-256 hash of a message
-    public static String computeSHA256(String message) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hashBytes = digest.digest(message.getBytes());
-        return Base64.getEncoder().encodeToString(hashBytes);
+
+    private static final String SHA256 = "SHA-256";
+
+    // Method to compute SHA-256 hash of a string
+    public static String computeHash(String data) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance(SHA256);
+        byte[] hashBytes = digest.digest(data.getBytes());
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
-    // Verify the integrity of a message by comparing hash values
-    public static boolean verifyMessageIntegrity(String message, String receivedHash) throws NoSuchAlgorithmException {
-        String computedHash = computeSHA256(message);
-        return computedHash.equals(receivedHash);
+    // Method to verify the hash against the original message
+    public static boolean verifyHash(String data, String hash) throws Exception {
+        String computedHash = computeHash(data);
+        return computedHash.equals(hash);
     }
 }
