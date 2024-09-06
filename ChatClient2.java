@@ -17,26 +17,32 @@ public class ChatClient2 {
     private static PrivateKey serverPrivateKey;
     private static PublicKey serverPublicKey;
 
+    
+
     public static void main(String[] args) {
+       
         try {
-            // Generate RSA keys for the server
+            // Generate RSA keys for peer2
             KeyPair serverKeyPair = RSAUtils.generateKeyPair();
             serverPublicKey = serverKeyPair.getPublic();
             serverPrivateKey = serverKeyPair.getPrivate();
+
+            System.out.print("\n\nWaiting for peer connection...");
+            
 
             try (ServerSocket serverSocket = new ServerSocket(PORT);
                  Socket socket = serverSocket.accept();
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader consoleInput = new BufferedReader(new InputStreamReader(System.in))) {
+                
+                System.out.println("\npeer connected.");
 
-                System.out.println("Client connected.");
-
-                // Send server public key to the client
+                // Send peer2 public key to peer1
                 out.println(RSAUtils.publicKeyToString(serverPublicKey));
-                System.out.println("Server public key sent to client.");
+                System.out.println("RSA public key sent to peer1.");
 
-                // Receive client public key
+                // Receive peer1 public key
                 String clientPublicKeyEncoded = in.readLine();
                 clientPublicKey = RSAUtils.stringToPublicKey(clientPublicKeyEncoded);
 
@@ -46,17 +52,18 @@ public class ChatClient2 {
                 byte[] aesKeyBytes = RSAUtils.decrypt(serverPrivateKey, encryptedSecretKey);
                 secretKey = new SecretKeySpec(aesKeyBytes, "AES");
                 System.out.println("AES key received and decrypted.");
+                System.out.println("_______________________________________________________________");
 
-                // Create a thread to handle incoming messages from the client
+                // handle incoming messages from peer1
                 Thread clientHandler = new Thread(() -> {
                     String message;
                     
-                    System.out.print("Say something: ");
+                    System.out.print("\nSay something: ");
                     try {
                         
                         while ((message = in.readLine()) != null) {
                             
-                            // Split the received message into encrypted part and hash part
+                            // Split received message into encrypted part and hash part
                             String[] parts = message.split("::");
                             if (parts.length == 2) {
                                 String encryptedMessage = parts[0];
@@ -67,11 +74,11 @@ public class ChatClient2 {
 
                                 // Verify the integrity
                                 if (HashUtils.verifyHash(decryptedMessage, receivedHash)) {
-                                    System.out.println("\nClient says: " + decryptedMessage);
+                                    System.out.println("\nFriend says: " + decryptedMessage);
                                 } else {
                                     System.out.println("\nMessage integrity check failed.");
                                 }
-                                System.out.print("Say something: ");
+                                System.out.print("\nSay something: ");
                             } else {
                                 System.out.println("Invalid message format.");
                             }
@@ -83,7 +90,7 @@ public class ChatClient2 {
                 });
                 clientHandler.start();
 
-                // Read messages from the console and send them to the client
+                // read from console and send messages to peer1
                 String userInput;
                 while ((userInput = consoleInput.readLine()) != null) {
                     // Encrypt the message
@@ -95,7 +102,7 @@ public class ChatClient2 {
                     // Send the encrypted message and hash separated by "::"
                     out.println(encryptedMessage + "::" + hash);
 
-                    System.out.print("Say something: ");
+                    System.out.print("\nSay something: ");
                 }
             }
         } catch (Exception e) {
